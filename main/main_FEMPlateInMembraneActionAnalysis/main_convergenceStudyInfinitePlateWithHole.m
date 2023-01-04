@@ -109,10 +109,10 @@ pathToOutput = '../../outputVTK/FEMPlateInMembraneActionAnalysis/refinementStudy
 
 % Name of the case
 % caseName = 'infinitePlateWithHoleCoarse';
-% caseName = 'infinitePlateWithHole';
+caseName = 'infinitePlateWithHole';
 % caseName = 'infinitePlateWithHoleFine';
 % caseName = 'infinitePlateWithHoleVeryFine';
-caseName = 'infinitePlateWithHoleQuadrilaterals';
+% caseName = 'infinitePlateWithHoleQuadrilaterals';
 
 % Parse the case
 [strMsh, homDOFs, inhomDOFs, valuesInhomDOFs, propNBC, propAnalysis, ...
