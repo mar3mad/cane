@@ -18,32 +18,10 @@ w0 = 0;
 % Computational domain
 propGeom.X0 = 0;
 propGeom.XL = 1;
+propGeom.Y0 = 0;
+propGeom.YL = .25;
 XComp = [propGeom.X0 propGeom.XL];
-
-%% Define analytical solution based on the given parameters
-syms w_analytical(X) q E I X0 XL
-
-% Method for obtaining the analytical parabolic solution for the benchmark
-% problem at hand (comment out the following lines to employ it):
-%
-% syms a b c d e E I X X0 XL q wmax
-% eqn1 = a*X0^4 + b*X0^3 + c*X0^2 + d*X0 + e == 0;
-% eqn2 = a*XL^4 + b*XL^3 + c*XL^2 + d*XL + e == 0;
-% eqn3 = 12*a*X0^2 + 6*b*X0 + 2*c == 0;
-% eqn4 = 12*a*XL^2 + 6*b*XL + 2*c == 0;
-% eqn5 = a*((X0 + XL)/2)^4 + b*((X0 + XL)/2)^3 + c*((X0 + XL)/2)^2 + d*(X0 + XL)/2 + e - wmax == 0;
-% eqns = [eqn1, eqn2, eqn3, eqn4, eqn5];
-% S = solve(eqns, [a b c d e]);
-% expr = S.a*X^4 + S.b*X^3 + S.c*X^2 + S.d*X + S.e;
-% wmax = 0.0156
-% expr = subs(expr, wmax);
-% expr = simplify(expr);
-%
-% expr =
-% -(156*(X - X0)*(X - XL)*(- X^2 + X*X0 + X*XL + X0^2 - 3*X0*XL + XL^2))/(3125*(X0 - XL)^4)
-w_analytical(X) = -(156*(X - X0)*(X - XL)*(- X^2 + X*X0 + X*XL + X0^2 - 3*X0*XL + XL^2))/(3125*(X0 - XL)^4);
-w_analytical(X) = subs(w_analytical(X), {q, E, I, X0, XL}, ...
-    {propStr.q0, propStr.E, propStr.I, propGeom.X0, propGeom.XL});
+YComp = [propGeom.Y0 propGeom.YL];
 
 %% Generate the training data
 
@@ -60,6 +38,7 @@ numInternColl = 1e2; % 1e3
 pointSet = sobolset(1);
 points = net(pointSet, numInternColl);
 X = XComp(1, 1) + points'*(XComp(1, 2) - XComp(1, 1));
+Y = YComp(1, 1) + points'*(YComp(1, 2) - YComp(1, 1));
 % X = linspace(0.1, 1.1, 10);
 
 %% Deep learning model
@@ -72,8 +51,8 @@ numNeurons = 5; % 10
 
 % initialize the weights and biases for the first fully connected operation
 % The input layer has 1 neuron and numNeurons connections to the next layer
-sz = [numNeurons 1];
-parameters.fc1_Weights = initializeHe(sz, 1, 'double');
+sz = [numNeurons 2];
+parameters.fc1_Weights = initializeHe(sz, 2, 'double');
 parameters.fc1_Bias = initializeZeros([numNeurons 1],'double');
 
 % Initialize the weights and biases for the hidden fully connected 
@@ -90,10 +69,10 @@ end
 
 % Initialize the final fully connected operation. The output layer has only 
 % one neuron and returns the predicted solution w(x)
-sz = [1 numNeurons];
+sz = [2 numNeurons];
 numIn = numNeurons;
 parameters.("fc" + numLayers + "_Weights") = initializeHe(sz, numIn,'double');
-parameters.("fc" + numLayers + "_Bias") = initializeZeros([1 1],'double');
+parameters.("fc" + numLayers + "_Bias") = initializeZeros([2 1],'double');
 
 %% Specify the optimization options
 opts = optimoptions('fmincon', ... % 'fmincon', 'fminunc' (R2022a)
@@ -105,7 +84,20 @@ opts = optimoptions('fmincon', ... % 'fmincon', 'fminunc' (R2022a)
     'Display', 'iter'); % 'iter', 'none'
 
 %%
-dlU = model(parameters, dlarray(0, 'CB'))
+
+dlX = dlarray(linspace(XComp(1), XComp(2), 100), 'CB');
+dlY = dlarray(linspace(YComp(1), YComp(2), 100), 'CB');
+
+dlU = model(parameters, dlX, dlY)
+
+
+
+
+
+dlfeval(@modelGradients1, parameters, dlX, dlY)
+
+
+
 
 %% Train the network using fmincon
 
@@ -172,6 +164,20 @@ drawnow
 %     0.0156
 
 %% Auxiliary functions
+
+function modelGradients1(parameters, dlX, dlY)
+
+    dlU = model(parameters, dlX, dlY);
+
+    d_dlUX_dx = dlgradient(sum(dlU(1, :),'all'), dlX, 'EnableHigherDerivatives', true);
+
+    d_dlUY_dy = dlgradient(sum(dlU(2, :),'all'), dlX, 'EnableHigherDerivatives', true);
+
+    dd_dlUX_dxdy = dlgradient(sum(d_dlUX_dx, 'all'), dlY);
+
+end
+
+
 
 %% Define the objective function that optimizes for the weights and biases
 function [loss, gradientsV] = objectiveFunction...
@@ -247,15 +253,15 @@ function [gradients,loss] = modelGradients ...
 end
 
 %% Feed-forward (model) function for the neural network
-function dlU = model(parameters, dlXBC)
+function dlU = model(parameters, X, Y)
 
-    dlXT = dlXBC;
+    XY = [X; Y];
     numLayers = numel(fieldnames(parameters))/2;
     
     % First fully connect operation.
     weights = parameters.fc1_Weights;
     bias = parameters.fc1_Bias;
-    dlU = fullyconnect(dlXT,weights,bias);
+    dlU = fullyconnect(XY,weights,bias);
     
     % tanh and fully connect operations for remaining layers.
     for i = 2:numLayers
