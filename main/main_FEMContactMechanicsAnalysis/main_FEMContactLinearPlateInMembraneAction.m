@@ -54,10 +54,10 @@ addpath('../../FEMContactMechanicsAnalysis/graphics/',...
 
 % Define the path to the case
 pathToCase = '../../inputGiD/FEMContactLinearPlateInMembraneAction/';
-% caseName = 'bridge';
-caseName = 'cantilever_beam';
+ %caseName = 'bridge';
+%caseName = 'cantilever_beam';
 % caseName = 'wedge';
-% caseName = 'hertz';
+ caseName = 'hertz';
 
 % Parse the data from the GiD input file
 [strMsh, homDBC, inhomDBC, valuesInhomDBC, propNBC, propAnalysis, ...
@@ -118,9 +118,9 @@ if strcmp(caseName,'bridge')
         contactSegments.points(2,:) = [1.2 -0.1 2 -0.1];
         contactSegments.points(3,:) = [2 -0.1 4.5 -0.5];
     elseif strcmp(typeSegment, 'tessellation_circle')
-        center = [2,-4.1];
+        center = [1,-4.4];
         radius = 4;
-        startAngle = 3*pi/4;
+        startAngle = 2*pi/4;
         endAngle = pi/4;
         numSegments = 30;
         contactSegments = createCircleSegments ...

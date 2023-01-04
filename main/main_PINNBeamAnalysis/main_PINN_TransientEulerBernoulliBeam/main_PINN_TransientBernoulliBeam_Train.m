@@ -8,7 +8,7 @@ addpath("../auxiliary/");
 
 paramStr.q0 = @(x,t) 0; % distributed load
 % paramStr.E = 1e7; % Young's modulus
-% paramStr.b = .1; % width
+% paramStr.b = .1; % widthdlarrayf
 % paramStr.h = .1; % height
 % paramStr.A = paramStr.b*paramStr.h;
 % paramStr.I = paramStr.b*(paramStr.h^3)/12; % moment of inertia
@@ -59,7 +59,6 @@ WIC = sin(pi * linspace(propGeom.X0, propGeom.XL, numBC));
 XBC = [XBC1 XBC2];
 TBC = [TBC1 TBC2];
 WBC = [WBC1 WBC2];
-
 numBC2 = 256;
 
 % boundary conditions

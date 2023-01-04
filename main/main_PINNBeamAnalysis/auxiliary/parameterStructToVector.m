@@ -3,7 +3,7 @@ function [parametersV,parameterNames,parameterSizes] = parameterStructToVector(p
 % vector and also returns the parameter names and sizes.
 
 % Parameter names.
-parameterNames = fieldnames(parameters);
+parameterNames = fieldnames(parameters); %fielnames = matlab function which gives the field names of the structure
 
 % Determine parameter sizes.
 numFields = numel(parameterNames);
